@@ -1,0 +1,4 @@
+/same
+*.json
+!testdata/*.json
+.DS_Store
