@@ -1,39 +1,35 @@
 # same
 
-**"Works on my machine." Find out why.**
+**Your project works on one machine and fails on another. `same` shows you the environment differences worth checking first.**
 
-`same` compares a working machine with a broken one and shows the differences most likely to matter.
+`same` takes a small snapshot of each development environment, then compares the two snapshots.
+
+It looks at things such as:
+
+- the Git commit and branch
+- Node, Python, Go, Java, Rust, package-manager and other tool versions
+- operating system and CPU architecture
+- whether important environment variables exist
+- PATH order
+- timezone and a few other machine settings
+
+It does **not** store environment-variable values such as passwords, tokens, or connection strings.
 
 ```text
-working machine          broken machine
-      │                         │
-      └── same capture          └── same capture
-                 \             /
-                  same compare
-                       │
-                       ▼
-              the useful differences
+Machine A: project works            Machine B: project fails
+
+same capture -o works.json          same capture -o broken.json
+             │                                   │
+             └──────── copy both JSON files ─────┘
+                              │
+                              ▼
+              same compare works.json broken.json
+                              │
+                              ▼
+                  differences ranked by importance
 ```
 
-## Try it in 30 seconds
-
-On the machine where the project works:
-
-```sh
-same capture -o works.json
-```
-
-On the machine where it breaks:
-
-```sh
-same capture -o broken.json
-```
-
-Compare them:
-
-```sh
-same compare works.json broken.json
-```
+Example:
 
 ```text
 Found 4 differences (3 high, 1 medium, 0 low)
@@ -51,10 +47,10 @@ Found 4 differences (3 high, 1 medium, 0 low)
 ! HIGH   env.DATABASE_URL.present
   working: true
   broken:  false
-  why:     An environment variable exists on only one machine.
+  why:     The variable exists on only one machine. Its value was not recorded.
 ```
 
-That's the whole idea: **capture both machines, compare them, fix the difference that matters.**
+`same` does not claim that every difference it shows is the cause. It puts the differences most likely to matter at the top so you have a short list to investigate.
 
 ## Install
 
@@ -62,7 +58,7 @@ That's the whole idea: **capture both machines, compare them, fix the difference
 go install github.com/seipass/same@latest
 ```
 
-Or build it locally:
+Or build it from source:
 
 ```sh
 git clone https://github.com/seipass/same
@@ -70,47 +66,59 @@ cd same
 go build .
 ```
 
-## What `same` compares
+## Quick start
 
-| Area | Examples |
-| --- | --- |
-| System | operating system, CPU architecture, kernel, timezone |
-| Source | Git commit, branch, uncommitted changes |
-| Tools | Node, Python, Go, Java, package managers, executable paths |
-| Environment | which environment variables exist |
-| PATH | search order and resolved tool locations |
+On the machine where the project works:
 
-The output is ranked so the most suspicious differences appear first.
-
-## Secrets stay out
-
-`same` **does not store environment variable values**.
-
-It records whether a variable exists, so this:
-
-```text
-DATABASE_URL: present
+```sh
+same capture -o works.json
 ```
 
-can be compared without putting the connection string into a snapshot.
+On the machine where it fails:
 
-Home-directory paths are shortened to `~` as well.
+```sh
+same capture -o broken.json
+```
 
-## Machine-readable output
+Copy the two JSON files onto either machine, then compare them:
+
+```sh
+same compare works.json broken.json
+```
+
+For machine-readable output:
 
 ```sh
 same compare --json works.json broken.json
 ```
 
-This makes `same` usable in scripts, bug reports, and automated checks.
+## What a snapshot contains
 
-## Why this exists
+A snapshot records:
 
-When software works on one machine and fails on another, the machines differ somewhere.
+- operating system, CPU architecture, kernel, and timezone
+- Git commit, branch, and whether the working tree has local changes
+- detected developer tools, their versions, and the executable paths being used
+- which environment-variable names are present
+- a small set of non-secret environment settings
+- PATH order
 
-The annoying part is finding the one useful difference among hundreds of irrelevant ones.
+Home-directory paths are shortened to `~`.
 
-`same` collects the common sources of environment drift and puts the likely causes at the top.
+Environment-variable values are intentionally omitted.
+
+## What `same` is for
+
+Use `same` when the same project behaves differently across two machines and you suspect the environments have drifted apart.
+
+Typical examples:
+
+- one developer can run the project and another cannot
+- a local machine behaves differently from a CI runner
+- an old laptop works while a newly set-up laptop does not
+- two machines appear identical but resolve different tools or versions
+
+`same` narrows the search to concrete differences you can inspect.
 
 ## Status
 
